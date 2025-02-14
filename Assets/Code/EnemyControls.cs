@@ -2,26 +2,36 @@ using UnityEngine;
 
 public class EnemyControls : MonoBehaviour
 {
-    public float health = 100;
-    private Renderer enemyRenderer;
+    public float LaunchForce = 30f;
+    public float MinSpinForce = 500f; // Minimum value for the spin force
+    public float MaxSpinForce = 1000f; // Maximum value for the spin force
+    public GameObject ExplosionEffectPreFab;
 
-    void Start()
+    void OnCollisionEnter(Collision collision)
     {
-        enemyRenderer = GetComponent<Renderer>();
-    }
-
-    public void ApplyDamage(float damageAmount)
-    {
-        health -= damageAmount;
-        Debug.Log("Enemy hit! Health: " + health);
-
-        // Change the Enemy's material to black when it takes damage
-        if (health <= 0)
+        if (collision.gameObject.CompareTag("Player"))
         {
-            if (enemyRenderer != null)
+            Rigidbody enemyRb = GetComponent<Rigidbody>();
+            
+            if (enemyRb != null)
             {
-                enemyRenderer.material.color = Color.black;
+                Vector3 launchDirection = transform.position - collision.transform.position;
+                launchDirection.y = 0.5f;
+
+                enemyRb.AddForce(launchDirection.normalized * LaunchForce, ForceMode.Impulse);
+
+                // Apply random spin force between MinSpinForce and MaxSpinForce for all axes
+                float randomSpinValue = Random.Range(MinSpinForce, MaxSpinForce);
+                Vector3 spinForce = new Vector3(randomSpinValue, randomSpinValue, randomSpinValue);
+                enemyRb.AddTorque(spinForce, ForceMode.Impulse);
             }
+        }
+
+        if (collision.gameObject.CompareTag("Wall"))
+        {
+            Instantiate(ExplosionEffectPreFab, transform.position, Quaternion.identity);
+            EnemySpawner.current--;
+            Destroy(gameObject);
         }
     }
 }
